@@ -1,14 +1,7 @@
 import type { Dashboard } from "../lib/types"
 import { useApiData } from "../lib/useApiData"
-import { money, numero } from "../lib/format"
-import { Badge, ErrorState, Loading, PageHeader, Pagination } from "../components/ui"
-
-const REPORTES = [
-  ["Ingresos y egresos", "Finanzas", "Período en curso", "Excel · PDF", "Disponible"],
-  ["Costos por campaña", "Operaciones", "Campaña 2025/2026", "Excel", "Disponible"],
-  ["Existencias de cereal", "Stock", "Al día de hoy", "PDF", "Disponible"],
-  ["Cuentas por pagar", "Finanzas", "Próximos 30 días", "Excel · PDF", "Disponible"],
-] as const
+import { money } from "../lib/format"
+import { ErrorState, Loading, PageHeader } from "../components/ui"
 
 export function Informes() {
   const { data, loading, error, reload } = useApiData<Dashboard>("/dashboard")
@@ -47,43 +40,7 @@ export function Informes() {
       ) : error ? (
         <ErrorState error={error} onRetry={reload} />
       ) : (
-        <div className="table-panel">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>INFORME</th>
-                  <th>CATEGORÍA</th>
-                  <th>PERÍODO</th>
-                  <th>FORMATO</th>
-                  <th>ESTADO</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {REPORTES.map((r) => (
-                  <tr key={r[0]}>
-                    <td>
-                      <strong>{r[0]}</strong>
-                    </td>
-                    <td>{r[1]}</td>
-                    <td>{r[2]}</td>
-                    <td>{r[3]}</td>
-                    <td>
-                      <Badge tone="success">{r[4]}</Badge>
-                    </td>
-                    <td>
-                      <button className="btn secondary" onClick={() => window.print()}>
-                        Exportar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pagination total={`Superficie implantada: ${numero(data?.superficieHa ?? 0, 0)} ha`} />
-        </div>
+        <p className="hint">La exportación de informes todavía no está disponible.</p>
       )}
     </div>
   )

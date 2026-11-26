@@ -17,18 +17,30 @@ CREATE DATABASE campo;
 ```bash
 cd campo-api/campo-api
 npm install
-# .env ya configurado para local (ver .env.example)
-npx prisma migrate dev
-npm run db:seed      # usuarios + datos de demostración
+# Configurar .env según .env.example
+npx prisma migrate deploy
 npm run dev          # API en http://localhost:3000
 ```
 
-Usuarios de prueba creados por el seed:
+### Datos de demostración opcionales
 
-| Usuario | Clave | Rol |
-|---------|-------|-----|
-| `admin@campo.local` | `admin1234` | ADMIN |
-| `encargado@campo.local` | `encargado1234` | ENCARGADO |
+Solo para una base **vacía y dedicada a pruebas**, aplique primero las migraciones
+con `npx prisma migrate deploy` usando la conexión deseada. En el editor SQL de
+Neon, abra y copie `campo-api/campo-api/prisma/demo.sql` completo; sustituya
+`REEMPLAZAR_CLAVE_ADMIN` y `REEMPLAZAR_CLAVE_ENCARGADO` dentro de los literales
+SQL por dos contraseñas propias, fuertes y distintas de 12 a 72 bytes UTF-8.
+Duplique cualquier comilla simple dentro de la contraseña. Ejecute todo el
+script en una única sesión; necesita permisos para crear `pgcrypto`. La
+transacción bloquea y comprueba todas las tablas de negocio (incluidos usuarios y
+auditoría) y cancela la carga si alguna contiene datos. Ante un error, ejecute
+`ROLLBACK` en esa sesión antes de reintentar.
+
+El script crea `admin@campo.local` (ADMIN) y `encargado@campo.local`
+(ENCARGADO), con hashes bcrypt de coste 12; no hay contraseñas predeterminadas.
+Los demás datos son ficticios, incluidos estados y relaciones del seed original;
+no deben usarse en producción. No guarde ni publique el SQL editado con
+contraseñas, y evite exponerlo en historial de consultas, registros o capturas.
+Use un canal y un cliente confiables, y proteja el acceso a la base.
 
 ### 3. Frontend
 

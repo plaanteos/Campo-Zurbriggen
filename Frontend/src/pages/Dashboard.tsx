@@ -57,7 +57,7 @@ export function Dashboard({
     <div className="content">
       <section className="home-banner">
         <div className="home-banner-left">
-          <span className="home-banner-date">{fechaLarga} · SAN CRISTÓBAL, SANTA FE</span>
+          <span className="home-banner-date">{fechaLarga}</span>
           <h1>
             Buen día, {nombre.split(" ")[0]}.
             <br />
@@ -89,15 +89,8 @@ export function Dashboard({
             <path d="M120 360 C190 270 260 280 340 301 S430 300 490 202" />
           </svg>
           <div className="home-banner-marker" aria-hidden="true" />
-          <div className="home-weather">
-            <div className="home-weather-temp">18°</div>
-            <div>
-              <strong>Despejado</strong>
-              <span>Viento NE 12 km/h</span>
-            </div>
-          </div>
           <div className="home-campaign">
-            <span>CAMPAÑA 2025/2026</span>
+            <span>CAMPAÑAS ACTIVAS</span>
             <strong>{numero(d?.superficieHa ?? 0, 0)} ha</strong>
             <small>Implantadas · {d?.cargasMes ?? 0} cargas del mes</small>
           </div>

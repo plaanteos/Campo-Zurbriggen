@@ -10,7 +10,7 @@ const BENEFICIOS = [
 ]
 
 export function Login({ onLogin }: { onLogin: (sesion: Sesion, token: string) => void }) {
-  const [email, setEmail] = useState("admin@campo.local")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
@@ -73,9 +73,8 @@ export function Login({ onLogin }: { onLogin: (sesion: Sesion, token: string) =>
 
           <div className="login-hero-footer">
             <span>
-              <Icon name="map" size={14} /> San Cristóbal, Santa Fe
+              <Icon name="map" size={14} /> Gestión agropecuaria
             </span>
-            <span>Campaña 2025/2026</span>
           </div>
         </section>
 
@@ -148,32 +147,6 @@ export function Login({ onLogin }: { onLogin: (sesion: Sesion, token: string) =>
             <button className="btn login-submit" type="submit" disabled={cargando}>
               {cargando ? "Ingresando..." : "Ingresar"}
             </button>
-
-            <div className="login-divider">
-              <span>Accesos de demostración</span>
-            </div>
-            <div className="login-demo">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("admin@campo.local")
-                  setPassword("admin1234")
-                }}
-              >
-                <strong>Administrador</strong>
-                <small>admin@campo.local</small>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("encargado@campo.local")
-                  setPassword("encargado1234")
-                }}
-              >
-                <strong>Encargado</strong>
-                <small>encargado@campo.local</small>
-              </button>
-            </div>
 
             <small className="login-copy">Agrogestión · Sistema de gestión agropecuaria</small>
           </form>

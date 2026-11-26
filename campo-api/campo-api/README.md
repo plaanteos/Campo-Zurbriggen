@@ -124,9 +124,13 @@ Los errores responden `{ "error": "...", "detalles": ... }`. Las validaciones de
 - `src/pages/Login.tsx`: pantalla de login que guarda token y usuario en `localStorage`.
 - Cada módulo (`Facturas`, `Remitos`, `Pagos`, `Cuentas`, `Cheques`, `Usuarios`, `Campos`, `Servicios`, `Cosechas`, `Inventario`, `Dashboard`) consulta la API y muestra estados de carga y error.
 - Formularios de alta reales para todos los módulos operativos y financieros.
+- Procesamiento local de PDF con extracción de texto y OCR en español para escaneos,
+  revisión manual y registro mediante los formularios existentes de facturas y remitos.
+  Los PDF (hasta 15 MB y 20 páginas) no se envían ni guardan en el servidor; se envían
+  únicamente los datos confirmados. No se utiliza un servicio de IA externo.
 - El menú se filtra según el rol del usuario logueado.
 
 ## Roadmap
 
 - **Hecho:** auth y roles, dashboard, remitos, facturas con matching, pagos imputados, cuenta corriente, cheques, usuarios, campos/lotes/campañas, servicios, cosechas, insumos y stock de cereal.
-- **Pendiente (fase 2/3):** procesamiento de documentos PDF con IA, informes exportables a Excel/PDF, integración con factura electrónica AFIP (WSFEv1), multi-empresa.
+- **Pendiente (fase 2/3):** extracción de documentos con IA, informes exportables a Excel/PDF, integración con factura electrónica AFIP (WSFEv1), multi-empresa.

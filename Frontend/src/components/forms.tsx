@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { ApiError, apiPatch, apiPost } from "../lib/api"
 import { ETIQUETA_CULTIVO, fechaInput, num } from "../lib/format"
 import { useApiData } from "../lib/useApiData"
+import type { DatosDocumento } from "../lib/documento"
 import type { Campania, Factura, LoteCampania, Tercero } from "../lib/types"
 import { FormError, Modal } from "./Modal"
 import { Button } from "./ui"
@@ -14,10 +15,12 @@ const errorDe = (e: unknown) => (e instanceof ApiError ? e.message : "No se pudo
 function Footer({
   onClose,
   guardando,
+  disabled = false,
   label = "Guardar registro",
 }: {
   onClose: () => void
   guardando: boolean
+  disabled?: boolean
   label?: string
 }) {
   return (
@@ -27,7 +30,7 @@ function Footer({
         <Button variant="secondary" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" form="campo-form" disabled={guardando}>
+        <Button type="submit" form="campo-form" disabled={guardando || disabled}>
           {guardando ? "Guardando..." : label}
         </Button>
       </div>
@@ -35,13 +38,13 @@ function Footer({
   )
 }
 
-export function RemitoForm({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
+export function RemitoForm({ onDone, onClose, initial }: { onDone: () => void; onClose: () => void; initial?: DatosDocumento }) {
   const terceros = useApiData<Tercero[]>("/terceros")
-  const [tipo, setTipo] = useState("COMPRA")
-  const [numero, setNumero] = useState("")
-  const [fecha, setFecha] = useState(hoy())
+  const [tipo, setTipo] = useState(initial ? "" : "COMPRA")
+  const [numero, setNumero] = useState(initial?.numero ?? "")
+  const [fecha, setFecha] = useState(initial ? initial.fecha ?? "" : hoy())
   const [terceroId, setTerceroId] = useState("")
-  const [importe, setImporte] = useState("")
+  const [importe, setImporte] = useState(initial?.importe ?? "")
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -68,13 +71,16 @@ export function RemitoForm({ onDone, onClose }: { onDone: () => void; onClose: (
   }
 
   return (
-    <Modal title="Nuevo remito" onClose={onClose} footer={<Footer onClose={onClose} guardando={guardando} />}>
+    <Modal title="Nuevo remito" onClose={onClose} footer={<Footer onClose={onClose} guardando={guardando} disabled={terceros.loading || Boolean(terceros.error)} />}>
       <form id="campo-form" className="form-section" onSubmit={guardar}>
+        {initial && <p className="hint">Revisá los valores detectados y seleccioná el tercero antes de guardar.</p>}
+        {terceros.error && <FormError error={`No se pudieron cargar los terceros: ${terceros.error}`} />}
         <h3>Datos del remito</h3>
         <div className="form-grid">
           <label>
             Tipo *
-            <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)} required>
+              {initial && <option value="">Seleccionar</option>}
               <option value="COMPRA">Compra</option>
               <option value="ENTREGA">Entrega</option>
               <option value="TRASLADO">Traslado</option>
@@ -114,21 +120,27 @@ export function RemitoForm({ onDone, onClose }: { onDone: () => void; onClose: (
             />
           </label>
         </div>
+        {initial && (
+          <label className="document-check">
+            <input type="checkbox" required />
+            Confirmo que revisé los datos del remito antes de guardarlo.
+          </label>
+        )}
         <FormError error={error} />
       </form>
     </Modal>
   )
 }
 
-export function FacturaForm({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
+export function FacturaForm({ onDone, onClose, initial }: { onDone: () => void; onClose: () => void; initial?: DatosDocumento }) {
   const terceros = useApiData<Tercero[]>("/terceros")
   const remitos = useApiData<import("../lib/types").Remito[]>("/remitos?pendientes=true")
-  const [direccion, setDireccion] = useState("COMPRA")
+  const [direccion, setDireccion] = useState(initial ? "" : "COMPRA")
   const [clase, setClase] = useState("FACTURA")
-  const [tipo, setTipo] = useState("A")
-  const [puntoVenta, setPuntoVenta] = useState("")
-  const [numeroFactura, setNumeroFactura] = useState("")
-  const [fecha, setFecha] = useState(hoy())
+  const [tipo, setTipo] = useState<string>(initial ? initial.tipoFactura ?? "" : "A")
+  const [puntoVenta, setPuntoVenta] = useState(initial?.numero?.split("-")[0] ?? "")
+  const [numeroFactura, setNumeroFactura] = useState(initial?.numero?.split("-")[1] ?? "")
+  const [fecha, setFecha] = useState(initial ? initial.fecha ?? "" : hoy())
   const [vencimiento, setVencimiento] = useState("")
   const [terceroId, setTerceroId] = useState("")
   const [seleccion, setSeleccion] = useState<string[]>([])
@@ -185,14 +197,23 @@ export function FacturaForm({ onDone, onClose }: { onDone: () => void; onClose: 
       title="Nueva factura"
       onClose={onClose}
       wide
-      footer={<Footer onClose={onClose} guardando={guardando} />}
+      footer={<Footer onClose={onClose} guardando={guardando} disabled={terceros.loading || Boolean(terceros.error) || (clase === "FACTURA" && (remitos.loading || Boolean(remitos.error)))} />}
     >
       <form id="campo-form" className="form-section" onSubmit={guardar}>
+        {initial && (
+          <p className="hint">
+            Revisá los valores detectados, seleccioná el tercero y vinculá los remitos.
+            {initial.importe && ` Total detectado en el PDF: ${initial.importe}.`}
+          </p>
+        )}
+        {terceros.error && <FormError error={`No se pudieron cargar los terceros: ${terceros.error}`} />}
+        {clase === "FACTURA" && remitos.error && <FormError error={`No se pudieron cargar los remitos: ${remitos.error}`} />}
         <h3>Comprobante</h3>
         <div className="form-grid">
           <label>
             Dirección *
-            <select value={direccion} onChange={(e) => setDireccion(e.target.value)}>
+            <select value={direccion} onChange={(e) => setDireccion(e.target.value)} required>
+              {initial && <option value="">Seleccionar</option>}
               <option value="COMPRA">Compra (recibida)</option>
               <option value="VENTA">Venta (emitida)</option>
             </select>
@@ -207,7 +228,8 @@ export function FacturaForm({ onDone, onClose }: { onDone: () => void; onClose: 
           </label>
           <label>
             Tipo *
-            <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)} required>
+              {initial && <option value="">Seleccionar</option>}
               <option value="A">A</option>
               <option value="B">B</option>
               <option value="C">C</option>
@@ -241,7 +263,7 @@ export function FacturaForm({ onDone, onClose }: { onDone: () => void; onClose: 
           </label>
           <label>
             Proveedor / cliente *
-            <select value={terceroId} onChange={(e) => setTerceroId(e.target.value)} required>
+            <select value={terceroId} onChange={(e) => { setTerceroId(e.target.value); setSeleccion([]) }} required>
               <option value="">Seleccionar</option>
               {terceros.data?.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -300,6 +322,18 @@ export function FacturaForm({ onDone, onClose }: { onDone: () => void; onClose: 
             <input value={dec(neto + iva)} readOnly className="total-input" />
           </label>
         </div>
+        {initial?.importe && (clase !== "FACTURA" || seleccion.length > 0) &&
+          dec(limpiarMonto(initial.importe)) !== dec(neto + iva) && (
+            <div className="form-error" role="alert">
+              El total calculado no coincide con el detectado en el PDF. Verificá el documento y los remitos.
+            </div>
+          )}
+        {initial && (
+          <label className="document-check">
+            <input type="checkbox" required />
+            Confirmo que revisé los datos de la factura antes de guardarla.
+          </label>
+        )}
         <FormError error={error} />
       </form>
     </Modal>

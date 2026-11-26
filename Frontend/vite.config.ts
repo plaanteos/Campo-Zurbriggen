@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
 react(),
       tailwindcss(),
+      localOcrAssets(),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
@@ -48,6 +49,30 @@ react(),
     },
   }
 })
+
+function localOcrAssets(): Plugin {
+  const files: Record<string, string> = {
+    'worker.min.js': 'node_modules/tesseract.js/dist/worker.min.js',
+    'tesseract-core-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
+    'spa.traineddata.gz': 'node_modules/@tesseract.js-data/spa/4.0.0_best_int/spa.traineddata.gz',
+  }
+  return {
+    name: 'local-ocr-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const name = req.url?.split('?')[0]?.replace(/^\/ocr\//, '')
+        if (!req.url?.startsWith('/ocr/') || !name || !Object.prototype.hasOwnProperty.call(files, name)) return next()
+        res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : 'application/gzip')
+        fs.createReadStream(path.resolve(__dirname, files[name])).pipe(res)
+      })
+    },
+    generateBundle() {
+      for (const [name, file] of Object.entries(files)) {
+        this.emitFile({ type: 'asset', fileName: `ocr/${name}`, source: fs.readFileSync(path.resolve(__dirname, file)) })
+      }
+    },
+  }
+}
 
 type FigmaSiteConfiguration = {
   title?: string

@@ -723,3 +723,27 @@ select.selectlike { height:33px; border:1px solid #d9ded9; background:#fff; padd
 @media(max-width:900px) { .home-banner { grid-template-columns:1fr } .home-banner-right { min-height:190px; flex-direction:row; align-items:flex-start } .home-campaign { align-self:flex-end } }
 @media(max-width:520px) { .home-banner h1 { font-size:28px } .home-banner-left { padding:28px 24px } .home-banner-left p { font-size:12px } .home-banner-right { padding:24px; min-height:220px; flex-direction:column; align-items:flex-end } }
 @media(prefers-reduced-motion:reduce) { .home-banner-lines path, .home-banner-lines path:nth-child(2) { animation:none } }
+.document-upload { margin-top: 16px; padding: 48px 20px; border: 1px dashed #aebbb1; background: #fff; text-align: center; color: var(--green); }
+.document-upload h2 { margin: 12px 0 6px; font-size: 17px; }
+.document-upload p { color: #64746a; }
+.document-file { position: relative; cursor: pointer; margin-top: 10px; }
+.document-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.document-review { margin-top: 16px; }
+.document-review .pdf-preview { display: block; }
+.document-review .pdf-toolbar a { color: white; }
+.document-preview { display: block; width: calc(100% - 32px); height: auto; margin: 16px; }
+.document-detected { display: grid; gap: 8px; padding: 16px; margin: 0; }
+.document-detected div { display: flex; justify-content: space-between; gap: 16px; }
+.document-detected dt { color: #64746a; }
+.document-detected dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.document-text { margin: 0 16px 16px; }
+.document-text summary { cursor: pointer; color: var(--green); }
+.document-text pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.document-confirm { border-top: 1px solid var(--line); padding: 16px; }
+.document-confirm > label:first-child { display: grid; gap: 6px; }
+.document-confirm select { min-height: 36px; border: 1px solid #d5dbd6; padding: 6px; background: white; }
+.document-check { display: flex; align-items: flex-start; gap: 8px; margin-top: 16px; }
+.document-ocr { justify-content: center; color: #64746a; }
+.document-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.document-warning, .document-success { margin: 16px; color: #7d5418; }
+.document-success { color: var(--green); }

@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Usuarios y auditoría ============
+
+enum Rol {
+  ADMIN
+  ENCARGADO
+}
+
+model Usuario {
+  id           String      @id @default(cuid())
+  nombre       String
+  email        String      @unique
+  passwordHash String
+  rol          Rol         @default(ENCARGADO)
+  activo       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  auditoria    Auditoria[]
+}
+
+model Auditoria {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  accion    String
+  entidad   String
+  entidadId String
+  createdAt DateTime @default(now())
+
+  @@index([entidad, entidadId])
+}
+
+// Contadores para numeración de pagos (OP-000001, RC-000001)
+model Secuencia {
+  clave String @id
+  valor Int    @default(0)
+}
+
+// ============ Terceros: proveedores, clientes, transportistas ============
+
+model Tercero {
+  id                  String         @id @default(cuid())
+  nombre              String
+  cuit                String         @unique
+  remitos             Remito[]
+  facturas            Factura[]
+  pagos               Pago[]
+  servicios           ServicioAgro[]
+  cargasTransportadas CargaCosecha[] @relation("transportistaCarga")
+  cargasDestino       CargaCosecha[] @relation("destinoCarga")
+}
+
+// ============ Campos, lotes y campañas ============
+
+model Establecimiento {
+  id        String  @id @default(cuid())
+  nombre    String
+  localidad String
+  hectareas Decimal @db.Decimal(10, 2)
+  lotes     Lote[]
+}
+
+model Lote {
+  id                String          @id @default(cuid())
+  establecimientoId String
+  establecimiento   Establecimiento @relation(fields: [establecimientoId], references: [id])
+  nombre            String
+  hectareas         Decimal         @db.Decimal(10, 2)
+  campanias         LoteCampania[]
+
+  @@unique([establecimientoId, nombre])
+}
+
+model Campania {
+  id     String         @id @default(cuid())
+  nombre String         @unique // p. ej. "2025/26"
+  activa Boolean        @default(true)
+  lotes  LoteCampania[]
+}
+
+enum Cultivo {
+  SOJA
+  MAIZ
+  TRIGO
+  CEBADA
+  GIRASOL
+  SORGO
+  OTRO
+}
+
+model LoteCampania {
+  id           String         @id @default(cuid())
+  loteId       String
+  lote         Lote           @relation(fields: [loteId], references: [id])
+  campaniaId   String
+  campania     Campania       @relation(fields: [campaniaId], references: [id])
+  cultivo      Cultivo
+  sembradoHa   Decimal        @db.Decimal(10, 2)
+  fechaSiembra DateTime?
+  servicios    ServicioAgro[]
+  cargas       CargaCosecha[]
+
+  @@unique([loteId, campaniaId])
+}
+
+// ============ Servicios agropecuarios (labores) ============
+
+enum TipoServicio {
+  PROPIO
+  CONTRATADO
+}
+
+enum EstadoServicio {
+  PENDIENTE
+  EN_EJECUCION
+  FINALIZADO
+}
+
+model ServicioAgro {
+  id             String         @id @default(cuid())
+  fecha          DateTime
+  labor          String
+  tipo           TipoServicio
+  estado         EstadoServicio @default(PENDIENTE)
+  costo          Decimal        @db.Decimal(14, 2)
+  loteCampaniaId String?
+  loteCampania   LoteCampania?  @relation(fields: [loteCampaniaId], references: [id])
+  terceroId      String?
+  tercero        Tercero?       @relation(fields: [terceroId], references: [id])
+  observaciones  String?
+  createdAt      DateTime       @default(now())
+}
+
+// ============ Cosechas, camiones y stock de cereal ============
+
+model Camion {
+  id      String         @id @default(cuid())
+  patente String         @unique
+  cargas  CargaCosecha[]
+}
+
+enum EstadoCarga {
+  EN_TRANSITO
+  ENTREGADA
+}
+
+model CargaCosecha {
+  id              String             @id @default(cuid())
+  fecha           DateTime
+  loteCampaniaId  String
+  loteCampania    LoteCampania       @relation(fields: [loteCampaniaId], references: [id])
+  camionId        String
+  camion          Camion             @relation(fields: [camionId], references: [id])
+  transportistaId String?
+  transportista   Tercero?           @relation("transportistaCarga", fields: [transportistaId], references: [id])
+  destinoId       String?
+  destino         Tercero?           @relation("destinoCarga", fields: [destinoId], references: [id])
+  kg              Decimal            @db.Decimal(12, 2)
+  estado          EstadoCarga        @default(EN_TRANSITO)
+  remitoId        String?            @unique
+  remito          Remito?            @relation(fields: [remitoId], references: [id])
+  movimientos     MovimientoCereal[]
+}
+
+enum TipoMovCereal {
+  INGRESO
+  EGRESO
+}
+
+model MovimientoCereal {
+  id            String        @id @default(cuid())
+  fecha         DateTime
+  cultivo       Cultivo
+  tipo          TipoMovCereal
+  kg            Decimal       @db.Decimal(12, 2)
+  cargaId       String?
+  carga         CargaCosecha? @relation(fields: [cargaId], references: [id])
+  observaciones String?
+  createdAt     DateTime      @default(now())
+}
+
+// ============ Inventario de insumos ============
+
+enum CategoriaInsumo {
+  AGROQUIMICO
+  FERTILIZANTE
+  SEMILLA
+  COMBUSTIBLE
+  OTRO
+}
+
+model Insumo {
+  id          String             @id @default(cuid())
+  nombre      String
+  categoria   CategoriaInsumo
+  unidad      String
+  movimientos MovimientoInsumo[]
+}
+
+enum TipoMovInsumo {
+  ENTRADA
+  SALIDA
+  AJUSTE
+}
+
+model MovimientoInsumo {
+  id         String        @id @default(cuid())
+  insumoId   String
+  insumo     Insumo        @relation(fields: [insumoId], references: [id])
+  fecha      DateTime
+  tipo       TipoMovInsumo
+  cantidad   Decimal       @db.Decimal(14, 3)
+  deposito   String
+  referencia String?
+  createdAt  DateTime      @default(now())
+}
+
+// ============ Remitos ============
+
+enum TipoRemito {
+  COMPRA
+  ENTREGA
+  TRASLADO
+}
+
+enum EstadoRemito {
+  PENDIENTE_FACTURA
+  FACTURADO
+  ANULADO
+}
+
+model Remito {
+  id        String          @id @default(cuid())
+  tipo      TipoRemito
+  numero    String
+  fecha     DateTime
+  terceroId String
+  tercero   Tercero         @relation(fields: [terceroId], references: [id])
+  importe   Decimal         @db.Decimal(14, 2)
+  estado    EstadoRemito    @default(PENDIENTE_FACTURA)
+  facturas  FacturaRemito[]
+  carga     CargaCosecha?
+  createdAt DateTime        @default(now())
+
+  @@unique([terceroId, numero])
+}
+
+// ============ Facturas y notas (comprobantes) ============
+
+enum DireccionComprobante {
+  COMPRA
+  VENTA
+}
+
+enum ClaseComprobante {
+  FACTURA
+  NOTA_CREDITO
+  NOTA_DEBITO
+}
+
+enum TipoComprobante {
+  A
+  B
+  C
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  PARCIAL
+  PAGADA
+  ANULADA
+}
+
+model Factura {
+  id           String               @id @default(cuid())
+  direccion    DireccionComprobante @default(COMPRA)
+  clase        ClaseComprobante     @default(FACTURA)
+  tipo         TipoComprobante
+  puntoVenta   String               @db.VarChar(4)
+  numero       String               @db.VarChar(8)
+  fecha        DateTime
+  vencimiento  DateTime?
+  terceroId    String
+  tercero      Tercero              @relation(fields: [terceroId], references: [id])
+  neto         Decimal              @db.Decimal(14, 2)
+  iva          Decimal              @db.Decimal(14, 2)
+  total        Decimal              @db.Decimal(14, 2)
+  pagado       Decimal              @default(0) @db.Decimal(14, 2)
+  estado       EstadoFactura        @default(PENDIENTE)
+  remitos      FacturaRemito[]
+  imputaciones ImputacionPago[]
+  createdAt    DateTime             @default(now())
+
+  @@unique([terceroId, clase, tipo, puntoVenta, numero])
+}
+
+model FacturaRemito {
+  facturaId String
+  factura   Factura @relation(fields: [facturaId], references: [id])
+  remitoId  String
+  remito    Remito  @relation(fields: [remitoId], references: [id])
+
+  @@id([facturaId, remitoId])
+}
+
+// ============ Pagos y cobros ============
+
+enum SentidoPago {
+  EMITIDO  // pagamos a un proveedor
+  RECIBIDO // cobramos de un cliente
+}
+
+enum MedioPago {
+  EFECTIVO
+  TRANSFERENCIA
+  CHEQUES
+  MIXTO
+}
+
+model Pago {
+  id            String           @id @default(cuid())
+  numero        String           @unique
+  fecha         DateTime
+  sentido       SentidoPago
+  terceroId     String
+  tercero       Tercero          @relation(fields: [terceroId], references: [id])
+  monto         Decimal          @db.Decimal(14, 2)
+  medio         MedioPago
+  observaciones String?
+  imputaciones  ImputacionPago[]
+  cheques       Cheque[]
+  createdAt     DateTime         @default(now())
+}
+
+model ImputacionPago {
+  id        String  @id @default(cuid())
+  pagoId    String
+  pago      Pago    @relation(fields: [pagoId], references: [id])
+  facturaId String
+  factura   Factura @relation(fields: [facturaId], references: [id])
+  monto     Decimal @db.Decimal(14, 2)
+}
+
+// ============ Cheques ============
+
+enum TipoCheque {
+  PROPIO
+  TERCERO
+}
+
+enum EstadoCheque {
+  EN_CARTERA
+  DEPOSITADO
+  COBRADO
+  RECHAZADO
+  ENTREGADO
+  ANULADO
+}
+
+model Cheque {
+  id           String       @id @default(cuid())
+  tipo         TipoCheque
+  numero       String
+  banco        String
+  importe      Decimal      @db.Decimal(14, 2)
+  fechaEmision DateTime
+  fechaPago    DateTime
+  librador     String?
+  cuitLibrador String?
+  estado       EstadoCheque
+  pagoId       String?
+  pago         Pago?        @relation(fields: [pagoId], references: [id])
+  createdAt    DateTime     @default(now())
+
+  @@unique([tipo, banco, numero])
+}

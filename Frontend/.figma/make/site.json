@@ -1,0 +1,10 @@
+{
+  "description": "Centraliza la gestión financiera, administrativa y operativa de empresas agropecuarias argentinas, desde campos e inventarios hasta facturas, pagos y reportes.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
